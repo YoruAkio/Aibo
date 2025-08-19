@@ -33,6 +33,7 @@ import {
   BookOpen,
   Code,
   GraduationCap,
+  User2,
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -103,6 +104,32 @@ export default function Dashboard() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const endRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  // @note auto resize textarea based on content with min 1 line and max 7 lines
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // @note reset height to auto to get proper scrollHeight
+    textarea.style.height = 'auto';
+
+    // @note calculate line height (approximately 20px per line)
+    const lineHeight = 20;
+    const minHeight = lineHeight * 1; // @note 1 line minimum
+    const maxHeight = lineHeight * 7; // @note 7 lines maximum
+
+    // @note set height based on content, with min/max constraints
+    const scrollHeight = textarea.scrollHeight;
+    const newHeight = Math.max(minHeight, Math.min(maxHeight, scrollHeight));
+
+    textarea.style.height = `${newHeight}px`;
+  }, []);
+
+  // @note trigger resize when input changes
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input, adjustTextareaHeight]);
 
   // @note save chat history to localStorage whenever it changes
   useEffect(() => {
@@ -236,7 +263,10 @@ export default function Dashboard() {
         messages: [],
       };
 
-      setChatHistory([newChat]);
+      setChatHistory(prev => [
+        newChat,
+        ...prev.map(chat => ({ ...chat, active: false })),
+      ]);
     }
 
     const userMessage = { id: Date.now(), role: 'user', content: input.trim() };
@@ -316,7 +346,14 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, updateChatMessages, activeChat]);
+  }, [
+    input,
+    isLoading,
+    messages,
+    updateChatMessages,
+    activeChat,
+    systemPrompt,
+  ]);
 
   const handleKeyDown = useCallback(
     e => {
@@ -335,20 +372,8 @@ export default function Dashboard() {
   }, []);
 
   const handleNewChat = useCallback(() => {
-    const newChatId = Math.floor(Math.random() * 1000000) + Date.now();
-    const currentTime = new Date();
-
-    const newChat = {
-      id: newChatId,
-      title: 'Percakapan Baru',
-      createdAt: currentTime.toISOString(),
-      active: true,
-      messages: [],
-    };
-    setChatHistory(prev => [
-      newChat,
-      ...prev.map(chat => ({ ...chat, active: false })),
-    ]);
+    // @note deactivate all existing chats instead of creating a new one immediately
+    setChatHistory(prev => prev.map(chat => ({ ...chat, active: false })));
   }, []);
 
   const handleDeleteChat = useCallback(
@@ -444,9 +469,6 @@ export default function Dashboard() {
                 <h1 className="font-semibold text-sm text-sidebar-foreground">
                   Aibo Dashboard
                 </h1>
-                <p className="text-xs text-sidebar-foreground/70">
-                  AI Assistant
-                </p>
               </div>
             </div>
             <div className="px-3 pb-3">
@@ -632,8 +654,7 @@ export default function Dashboard() {
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full">
               <div className="flex flex-col gap-3 max-w-3xl mx-auto px-3 py-3">
-                {chatHistory.length === 0 ||
-                (activeChat && messages.length === 0) ? (
+                {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center py-12">
                     <h1 className="text-4xl font-bold mb-6 text-foreground">
                       How can I help you?
@@ -694,9 +715,9 @@ export default function Dashboard() {
                     >
                       <div className="flex items-start gap-2">
                         {m.role === 'assistant' && (
-                          <Avatar className="size-6">
+                          <Avatar className="size-8">
                             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                              <Brain className="size-3" />
+                              <Brain className="w-4 h-4" />
                             </AvatarFallback>
                           </Avatar>
                         )}
@@ -725,9 +746,9 @@ export default function Dashboard() {
                           )}
                         </div>
                         {m.role === 'user' && (
-                          <Avatar className="size-6">
+                          <Avatar className="size-8">
                             <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                              U
+                              <User2 className="w-4 h-4" />
                             </AvatarFallback>
                           </Avatar>
                         )}
@@ -740,40 +761,91 @@ export default function Dashboard() {
             </ScrollArea>
           </div>
 
-          {/* @note fixed input area */}
-          <div className="shrink-0 border-t border-border p-3 bg-background">
-            <div className="max-w-3xl mx-auto">
-              <div className="flex items-end gap-2">
-                <div className="flex-1 relative">
-                  <Textarea
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    rows={1}
-                    placeholder="Ketik pesan Anda..."
-                    className="resize-none min-h-10 max-h-24 pr-10 text-sm"
-                  />{' '}
-                  <Button
-                    onClick={handleSend}
-                    size="sm"
-                    className="absolute right-1 bottom-1 size-6"
-                    disabled={!input.trim() || isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent" />
-                    ) : (
-                      <Send className="size-3" />
+          {/* @note modern redesigned input area with enhanced styling and UX */}
+          <div className="shrink-0 border-t border-border/50 bg-gradient-to-t from-background/95 to-background/80 backdrop-blur-sm">
+            <div className="max-w-4xl mx-auto p-4">
+              {/* @note input container with glass morphism effect */}
+              <div className="relative bg-card/50 backdrop-blur-md border border-border/60 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-3">
+                <div className="flex items-end gap-3">
+                  <div className="flex-1 relative">
+                    {/* @note enhanced textarea with modern styling and auto-resize */}
+                    <Textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={e => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      rows={1}
+                      placeholder="Ketik pesan Anda di sini..."
+                      className="resize-none min-h-[48px] max-h-[140px] pr-16 pl-4 py-3 border-0 bg-transparent text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-0 leading-relaxed overflow-hidden"
+                      style={{ height: '48px' }}
+                    />
+
+                    {/* @note character count indicator for longer messages */}
+                    {input.length > 100 && (
+                      <div className="absolute top-2 right-16 text-xs text-muted-foreground/60">
+                        {input.length}
+                      </div>
                     )}
-                  </Button>
+
+                    {/* @note enhanced send button with better positioning */}
+                    <div className="absolute right-2 bottom-2 flex items-center gap-2">
+                      {/* @note typing indicator */}
+                      {input.trim() && !isLoading && (
+                        <div className="text-xs text-muted-foreground/60 hidden sm:block">
+                          Enter
+                        </div>
+                      )}{' '}
+                      <Button
+                        onClick={handleSend}
+                        size="sm"
+                        className="h-8 w-8 rounded-lg bg-primary hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!input.trim() || isLoading}
+                      >
+                        {isLoading ? (
+                          <div className="w-4 h-4 flex items-center justify-center">
+                            <div className="w-3 h-3 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin"></div>
+                          </div>
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* @note enhanced status message with better typography */}
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <div className="text-xs text-muted-foreground/70">
+                    {messages.length === 0 ? (
+                      'Mulai percakapan pertama Anda dengan Aibo'
+                    ) : (
+                      <span className="hidden sm:inline">
+                        Tekan Enter untuk kirim, Shift + Enter untuk baris baru
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1 text-center">
-                {isLoading
-                  ? 'Aibo sedang mengetik...'
-                  : chatHistory.length === 0
-                  ? 'Mulai percakapan pertama Anda dengan Aibo'
-                  : 'Tekan Enter untuk kirim, Shift + Enter untuk baris baru'}
-              </p>
+
+              {/* @note quick action buttons for mobile */}
+              {messages.length === 0 && (
+                <div className="flex justify-center mt-3 sm:hidden">
+                  <div className="flex gap-2 text-xs">
+                    <button
+                      onClick={() => setInput('Halo Aibo!')}
+                      className="px-3 py-1.5 bg-secondary/50 hover:bg-secondary/70 rounded-full transition-colors"
+                    >
+                      👋 Sapa
+                    </button>
+                    <button
+                      onClick={() => setInput('Apa yang bisa kamu bantu?')}
+                      className="px-3 py-1.5 bg-secondary/50 hover:bg-secondary/70 rounded-full transition-colors"
+                    >
+                      ❓ Bantuan
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </SidebarInset>
