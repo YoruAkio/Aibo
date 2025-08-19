@@ -452,53 +452,24 @@ export default function Dashboard() {
             >
               <Settings className="size-4" />
             </Button>
-            <Button variant="ghost" size="sm">
-              <Search className="size-4" />
-            </Button>
           </header>
 
           <div className="flex-1 flex flex-col">
-            <div className="p-6 border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Aibo</h1>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={togglePromptEditor}
-                    className="text-gray-300 border-gray-700 hover:bg-gray-800 hover:text-white"
-                  >
-                    {isEditingPrompt ? 'Save' : 'Edit Prompt'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleNewChat()}
-                    className="text-gray-300 border-gray-700 hover:bg-gray-800 hover:text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Chat
-                  </Button>
-                </div>
-              </div>
-            </div>
-
             {/* @note system prompt editor */}
             {isEditingPrompt && (
-              <div className="p-4 border-b border-gray-800 bg-gray-900/30">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="p-4 border-b border-border bg-muted/30">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   System Prompt
                 </label>
                 <Textarea
                   value={systemPrompt}
                   onChange={e => handleSystemPromptChange(e.target.value)}
-                  className="w-full bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  className="w-full"
                   placeholder="Enter system prompt..."
                   rows={3}
                 />
               </div>
             )}
-
             {/* @note scrollable chat messages */}
             <div className="flex-1 overflow-hidden">
               <ScrollArea className="h-full">
@@ -558,7 +529,6 @@ export default function Dashboard() {
                 </div>
               </ScrollArea>
             </div>
-
             {/* @note fixed input area */}
             <div className="shrink-0 border-t border-border p-4 bg-background">
               <div className="max-w-4xl mx-auto">
