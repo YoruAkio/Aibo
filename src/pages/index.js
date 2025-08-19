@@ -64,7 +64,7 @@ export default function Home() {
                   WebkitBackdropFilter: 'blur(8px)',
                 }}
               >
-                <Sparkles className="size-4 text-primary" />
+                <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-muted-foreground">
                   Powered by Advanced AI
                 </span>
@@ -91,7 +91,7 @@ export default function Home() {
                 <Link href="/dashboard">
                   <Button size="default" className="group px-6 py-2">
                     Mulai Percakapan
-                    <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
                 <Button variant="outline" size="default" className="px-6 py-2">
@@ -125,7 +125,7 @@ export default function Home() {
               >
                 <CardContent className="p-6">
                   <div className="rounded-full bg-primary/10 w-10 h-10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                    <MessageCircle className="size-5 text-primary" />
+                    <MessageCircle className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">
                     Percakapan Natural
@@ -146,7 +146,7 @@ export default function Home() {
               >
                 <CardContent className="p-6">
                   <div className="rounded-full bg-primary/10 w-10 h-10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                    <Zap className="size-5 text-primary" />
+                    <Zap className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">Respons Instan</h3>
                   <p className="text-muted-foreground leading-relaxed text-sm">
@@ -165,7 +165,7 @@ export default function Home() {
               >
                 <CardContent className="p-6">
                   <div className="rounded-full bg-primary/10 w-10 h-10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                    <Shield className="size-5 text-primary" />
+                    <Shield className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">
                     Privasi Terjamin
@@ -200,7 +200,7 @@ export default function Home() {
               <Link href="/dashboard">
                 <Button size="default" className="px-6 py-2 group">
                   Coba Sekarang
-                  <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
             </div>
