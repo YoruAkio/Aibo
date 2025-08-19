@@ -17,7 +17,7 @@ export default function Navbar() {
 						<Link href="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link>
 					</nav>
 					<div className="flex items-center gap-2">
-						<Button asChild>
+						<Button asChild className="rounded-full">
 							<Link href="/dashboard">Coba Sekarang</Link>
 						</Button>
 					</div>

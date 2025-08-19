@@ -400,16 +400,16 @@ export default function Dashboard() {
               <SidebarMenu>
                 {chatHistory.map(chat => (
                   <SidebarMenuItem key={chat.id}>
-                    <div className="flex items-center group w-full relative mx-2 mb-1">
+                    <div className="flex items-center group w-full gap-2 px-2 py-1">
                       <SidebarMenuButton
                         isActive={chat.active}
                         onClick={() => handleChatSelect(chat.id)}
-                        className="flex-1 hover:bg-sidebar-accent/80 transition-colors duration-200 pr-10 py-3 px-3 rounded-lg data-[active=true]:bg-sidebar-accent data-[active=true]:shadow-sm"
+                        className="flex-1 hover:bg-sidebar-accent/80 transition-colors duration-200 py-2 px-3 rounded-lg data-[active=true]:bg-sidebar-accent data-[active=true]:shadow-sm min-w-0"
                       >
                         <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <MessageSquare className="size-4 text-primary" />
                         </div>
-                        <div className="flex-1 text-left min-w-0 ml-3">
+                        <div className="flex-1 text-left min-w-0 ml-3 overflow-hidden">
                           <div className="text-sm font-medium truncate leading-tight">
                             {chat.title}
                           </div>
@@ -420,7 +420,7 @@ export default function Dashboard() {
                       </SidebarMenuButton>
                       {chatHistory.length > 1 && (
                         <div
-                          className="size-8 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 absolute right-3 top-1/2 -translate-y-1/2"
+                          className="size-8 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 flex-shrink-0"
                           onClick={e => handleDeleteChat(chat.id, e)}
                           title="Hapus percakapan"
                         >

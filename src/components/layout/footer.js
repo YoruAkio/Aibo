@@ -13,9 +13,9 @@ export default function Footer() {
           <div className="flex items-center gap-3">
             <div
               aria-label="Aibo"
-              className="size-6 rounded-lg bg-primary flex items-center justify-center"
+              className="size-10 rounded-lg bg-primary flex items-center justify-center"
             >
-              <Brain className="size-3 text-primary-foreground" />
+              <Brain className="size-6 text-primary-foreground" />
             </div>
             <div className="leading-tight">
               <p className="font-semibold text-foreground text-sm">Aibo</p>
@@ -25,6 +25,9 @@ export default function Footer() {
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               © {year} Aibo. All rights reserved.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Seleksi AVR 2025
             </p>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
+import Link from 'next/link';
 import {
   ArrowRight,
   Sparkles,
@@ -61,10 +62,12 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button size="lg" className="group px-8 py-3 text-base">
-                  Mulai Percakapan
-                  <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+                <Link href="/dashboard">
+                  <Button size="lg" className="group px-8 py-3 text-base">
+                    Mulai Percakapan
+                    <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </Link>
                 <Button
                   variant="outline"
                   size="lg"
@@ -148,10 +151,12 @@ export default function Home() {
                 Bergabunglah dengan ribuan pengguna yang sudah merasakan
                 pengalaman AI terbaik dengan Aibo.
               </p>
-              <Button size="lg" className="px-8 py-3 text-base group">
-                Coba Gratis Sekarang
-                <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-              </Button>
+              <Link href="/dashboard">
+                <Button size="lg" className="px-8 py-3 text-base group">
+                  Coba Sekarang
+                  <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
