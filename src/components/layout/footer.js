@@ -26,9 +26,7 @@ export default function Footer() {
             <p className="text-sm text-muted-foreground">
               © {year} Aibo. All rights reserved.
             </p>
-            <p className="text-xs text-muted-foreground">
-              Seleksi AVR 2025
-            </p>
+            <p className="text-xs text-muted-foreground">Seleksi AVR 2025</p>
           </div>
         </div>
       </div>
