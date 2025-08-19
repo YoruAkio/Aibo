@@ -29,10 +29,44 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  Sparkles,
+  BookOpen,
+  Code,
+  GraduationCap,
 } from 'lucide-react';
 
 export default function Dashboard() {
   const [isMounted, setIsMounted] = useState(false);
+
+  const [activeTab, setActiveTab] = useState('Create');
+
+  // @note sample questions organized by category
+  const sampleQuestions = {
+    Create: [
+      'Buatkan cerita pendek tentang robot yang menemukan perasaan',
+      'Buatkan rencana bisnis untuk kedai kopi dengan konsep eco-friendly',
+      'Rancang konsep aplikasi mobile untuk belajar bahasa',
+      'Berikan 5 ide kreatif untuk menulis novel fantasi',
+    ],
+    Explore: [
+      'Jelaskan bagaimana cara kerja quantum computing dengan sederhana',
+      'Apa saja tren terbaru dalam teknologi AI di tahun 2024?',
+      'Jelaskan konsep metaverse dan dampaknya pada masa depan',
+      'Sebutkan 5 sumber energi terbarukan yang paling efisien',
+    ],
+    Code: [
+      'Jelaskan perbedaan antara var, let, dan const di JavaScript',
+      'Buatkan contoh komponen React untuk menampilkan daftar tugas',
+      'Jelaskan apa itu REST API dan berikan contoh penggunaannya',
+      'Buatkan fungsi Python untuk mengurutkan array angka secara ascending',
+    ],
+    Learn: [
+      'Jelaskan dasar-dasar machine learning untuk pemula',
+      'Berikan 7 tips untuk meningkatkan kemampuan komunikasi',
+      'Jelaskan strategi investasi yang aman untuk pemula',
+      'Jelaskan proses fotosintesis dengan bahasa yang mudah dipahami',
+    ],
+  };
 
   // @note system prompt state with default value
   const [systemPrompt, setSystemPrompt] = useState(
@@ -40,22 +74,8 @@ export default function Dashboard() {
   );
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
 
-  // @note initialize chat history from localStorage only after mount
-  const [chatHistory, setChatHistory] = useState([
-    {
-      id: 1,
-      title: 'Percakapan Hari Ini',
-      timestamp: '2 menit lalu',
-      active: true,
-      messages: [
-        {
-          id: 1,
-          role: 'assistant',
-          content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-        },
-      ],
-    },
-  ]);
+  // @note initialize empty chat history - no default chat
+  const [chatHistory, setChatHistory] = useState([]);
 
   // @note load from localStorage after component mounts
   useEffect(() => {
@@ -64,7 +84,7 @@ export default function Dashboard() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setChatHistory(parsed);
         }
       } catch (error) {
@@ -75,11 +95,11 @@ export default function Dashboard() {
 
   // @note get current active chat and its messages
   const activeChat = useMemo(
-    () => chatHistory.find(chat => chat.active) || chatHistory[0],
+    () => chatHistory.find(chat => chat.active),
     [chatHistory],
   );
 
-  const [messages, setMessages] = useState(activeChat?.messages || []);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const endRef = useRef(null);
@@ -93,7 +113,11 @@ export default function Dashboard() {
 
   // @note update messages when active chat changes
   useEffect(() => {
-    setMessages(activeChat?.messages || []);
+    if (activeChat) {
+      setMessages(activeChat.messages || []);
+    } else {
+      setMessages([]);
+    }
   }, [activeChat]);
 
   // @note auto scroll to bottom when messages change
@@ -105,7 +129,7 @@ export default function Dashboard() {
   const generateChatTitle = useCallback(messages => {
     const firstUserMessage = messages.find(msg => msg.role === 'user');
     if (firstUserMessage) {
-      const title = firstUserMessage.content.slice(0, 30);
+      const title = firstUserMessage.content.slice(0, 20);
       return title.length < firstUserMessage.content.length
         ? `${title}...`
         : title;
@@ -199,6 +223,22 @@ export default function Dashboard() {
   const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
+    // @note create new chat if no active chat exists
+    if (!activeChat) {
+      const newChatId = Math.floor(Math.random() * 1000000) + Date.now();
+      const currentTime = new Date();
+
+      const newChat = {
+        id: newChatId,
+        title: 'Percakapan Baru',
+        createdAt: currentTime.toISOString(),
+        active: true,
+        messages: [],
+      };
+
+      setChatHistory([newChat]);
+    }
+
     const userMessage = { id: Date.now(), role: 'user', content: input.trim() };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -276,7 +316,7 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, updateChatMessages]);
+  }, [input, isLoading, messages, updateChatMessages, activeChat]);
 
   const handleKeyDown = useCallback(
     e => {
@@ -297,23 +337,13 @@ export default function Dashboard() {
   const handleNewChat = useCallback(() => {
     const newChatId = Math.floor(Math.random() * 1000000) + Date.now();
     const currentTime = new Date();
-    const timeString = currentTime.toLocaleString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
 
     const newChat = {
       id: newChatId,
       title: 'Percakapan Baru',
-      timestamp: timeString,
+      createdAt: currentTime.toISOString(),
       active: true,
-      messages: [
-        {
-          id: 1,
-          role: 'assistant',
-          content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-        },
-      ],
+      messages: [],
     };
     setChatHistory(prev => [
       newChat,
@@ -351,6 +381,41 @@ export default function Dashboard() {
     setIsEditingPrompt(!isEditingPrompt);
   };
 
+  // @note group chats by date
+  const groupChatsByDate = useCallback(chats => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const groups = {
+      today: [],
+      yesterday: [],
+      older: [],
+    };
+
+    chats.forEach(chat => {
+      const chatDate = new Date(chat.createdAt || Date.now());
+      const isToday = chatDate.toDateString() === today.toDateString();
+      const isYesterday = chatDate.toDateString() === yesterday.toDateString();
+
+      if (isToday) {
+        groups.today.push(chat);
+      } else if (isYesterday) {
+        groups.yesterday.push(chat);
+      } else {
+        groups.older.push(chat);
+      }
+    });
+
+    return groups;
+  }, []);
+
+  // @note memoized grouped chats
+  const groupedChats = useMemo(
+    () => groupChatsByDate(chatHistory),
+    [chatHistory, groupChatsByDate],
+  );
+
   // @note prevent hydration mismatch by not rendering until mounted
   if (!isMounted) {
     return (
@@ -369,69 +434,157 @@ export default function Dashboard() {
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background">
         {/* @note sidebar for chat history */}
-        <Sidebar className="border-r border-border">
-          <SidebarHeader className="border-b border-border">
-            <div className="flex items-center gap-2 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <div className="size-6 rounded-lg bg-primary flex items-center justify-center">
-                  <Brain className="size-3 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="font-semibold text-xs">Aibo Dashboard</h1>
-                  <p className="text-xs text-muted-foreground">AI Assistant</p>
-                </div>
+        <Sidebar className="border-r border-border bg-sidebar">
+          <SidebarHeader className="border-b border-sidebar-border bg-sidebar">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <Brain className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="font-semibold text-sm text-sidebar-foreground">
+                  Aibo Dashboard
+                </h1>
+                <p className="text-xs text-sidebar-foreground/70">
+                  AI Assistant
+                </p>
               </div>
             </div>
-            <Button
-              onClick={handleNewChat}
-              className="mx-3 mb-2 justify-start gap-2 h-8 text-xs"
-              variant="outline"
-            >
-              <Plus className="size-3" />
-              Percakapan Baru
-            </Button>
+            <div className="px-3 pb-3">
+              <Button
+                onClick={handleNewChat}
+                className="w-full justify-start gap-2 h-9 text-sm bg-sidebar-accent hover:bg-sidebar-accent/80 text-sidebar-accent-foreground border border-sidebar-border"
+                variant="outline"
+              >
+                <Plus className="w-4 h-4" />
+                Percakapan Baru
+              </Button>
+            </div>
           </SidebarHeader>
 
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel>
-                <History className="size-4" />
-                Riwayat Chat
-              </SidebarGroupLabel>
-              <SidebarMenu>
-                {chatHistory.map(chat => (
-                  <SidebarMenuItem key={chat.id}>
-                    <div className="flex items-center group w-full gap-1 px-1 py-1">
-                      <SidebarMenuButton
-                        isActive={chat.active}
-                        onClick={() => handleChatSelect(chat.id)}
-                        className="flex-1 hover:bg-sidebar-accent/80 transition-colors duration-200 py-1 px-2 rounded-lg data-[active=true]:bg-sidebar-accent data-[active=true]:shadow-sm min-w-0"
-                      >
-                        <div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <MessageSquare className="size-3 text-primary" />
-                        </div>
-                        <div className="flex-1 text-left min-w-0 ml-2 overflow-hidden">
-                          <div className="text-xs font-medium truncate leading-tight">
-                            {chat.title}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {chat.timestamp}
-                          </div>
-                        </div>
-                      </SidebarMenuButton>
-                      {chatHistory.length > 1 && (
-                        <div
-                          className="size-6 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 flex-shrink-0"
-                          onClick={e => handleDeleteChat(chat.id, e)}
-                          title="Hapus percakapan"
-                        >
-                          <Trash2 className="size-3 text-destructive" />
-                        </div>
-                      )}
+              <div className="px-2">
+                {chatHistory.length === 0 ? (
+                  <div className="px-2 py-6 text-center">
+                    <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                      <MessageSquare className="w-5 h-5 text-muted-foreground" />
                     </div>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Belum ada riwayat chat
+                    </p>
+                    <p className="text-xs text-muted-foreground/70">
+                      Mulai percakapan dengan mengetik pesan
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {groupedChats.today.length > 0 && (
+                      <div>
+                        <h3 className="text-xs font-medium text-muted-foreground px-2 mb-2">
+                          Today
+                        </h3>
+                        <div className="space-y-1">
+                          {groupedChats.today.map(chat => (
+                            <div key={chat.id} className="group relative">
+                              <button
+                                onClick={() => handleChatSelect(chat.id)}
+                                className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 hover:bg-sidebar-accent/50 ${
+                                  chat.active
+                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                                    : ''
+                                }`}
+                              >
+                                <span className="text-sm truncate">
+                                  {chat.title}
+                                </span>
+                              </button>
+                              {chatHistory.length > 1 && (
+                                <button
+                                  onClick={e => handleDeleteChat(chat.id, e)}
+                                  className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                  title="Hapus percakapan"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {groupedChats.yesterday.length > 0 && (
+                      <div>
+                        <h3 className="text-xs font-medium text-muted-foreground px-2 mb-2">
+                          Yesterday
+                        </h3>
+                        <div className="space-y-1">
+                          {groupedChats.yesterday.map(chat => (
+                            <div key={chat.id} className="group relative">
+                              <button
+                                onClick={() => handleChatSelect(chat.id)}
+                                className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 hover:bg-sidebar-accent/50 ${
+                                  chat.active
+                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                                    : ''
+                                }`}
+                              >
+                                <span className="text-sm truncate">
+                                  {chat.title}
+                                </span>
+                              </button>
+                              {chatHistory.length > 1 && (
+                                <button
+                                  onClick={e => handleDeleteChat(chat.id, e)}
+                                  className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                  title="Hapus percakapan"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {groupedChats.older.length > 0 && (
+                      <div>
+                        <h3 className="text-xs font-medium text-muted-foreground px-2 mb-2">
+                          Previous 7 days
+                        </h3>
+                        <div className="space-y-1">
+                          {groupedChats.older.map(chat => (
+                            <div key={chat.id} className="group relative">
+                              <button
+                                onClick={() => handleChatSelect(chat.id)}
+                                className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 hover:bg-sidebar-accent/50 ${
+                                  chat.active
+                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                                    : ''
+                                }`}
+                              >
+                                <span className="text-sm truncate">
+                                  {chat.title}
+                                </span>
+                              </button>
+                              {chatHistory.length > 1 && (
+                                <button
+                                  onClick={e => handleDeleteChat(chat.id, e)}
+                                  className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                  title="Hapus percakapan"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
@@ -479,57 +632,109 @@ export default function Dashboard() {
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full">
               <div className="flex flex-col gap-3 max-w-3xl mx-auto px-3 py-3">
-                {messages.map(m => (
-                  <div
-                    key={m.id}
-                    className={
-                      m.role === 'user'
-                        ? 'self-end max-w-[80%]'
-                        : 'self-start max-w-[80%]'
-                    }
-                  >
-                    <div className="flex items-start gap-2">
-                      {m.role === 'assistant' && (
-                        <Avatar className="size-6">
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            <Brain className="size-3" />
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div
-                        className={
-                          m.role === 'user'
-                            ? 'rounded-xl bg-primary text-primary-foreground px-3 py-2 shadow-sm'
-                            : 'rounded-xl bg-muted text-foreground px-3 py-2 shadow-sm'
-                        }
-                      >
-                        {m.isLoading ? (
-                          <div className="flex items-center gap-1">
-                            <div className="flex space-x-1">
-                              <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                              <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                              <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce"></div>
-                            </div>
-                            <span className="text-xs text-muted-foreground ml-2">
-                              Aibo sedang mengetik...
-                            </span>
-                          </div>
-                        ) : (
-                          <p className="whitespace-pre-wrap text-xs leading-relaxed">
-                            {m.content}
-                          </p>
-                        )}
-                      </div>
-                      {m.role === 'user' && (
-                        <Avatar className="size-6">
-                          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                            U
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
+                {chatHistory.length === 0 ||
+                (activeChat && messages.length === 0) ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                    <h1 className="text-4xl font-bold mb-6 text-foreground">
+                      How can I help you?
+                    </h1>
+
+                    {/* @note category tabs */}
+                    <div className="flex flex-wrap gap-2 mb-8 justify-center">
+                      {Object.keys(sampleQuestions).map(category => {
+                        const icons = {
+                          Create: Sparkles,
+                          Explore: BookOpen,
+                          Code: Code,
+                          Learn: GraduationCap,
+                        };
+                        const Icon = icons[category];
+
+                        return (
+                          <button
+                            key={category}
+                            onClick={() => setActiveTab(category)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                              activeTab === category
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'border-border hover:bg-muted/50'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                            <span className="text-sm">{category}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* @note sample questions for active tab */}
+                    <div className="space-y-3 w-full max-w-lg">
+                      {sampleQuestions[activeTab].map((question, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setInput(question)}
+                          className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                        >
+                          <span className="text-sm text-muted-foreground">
+                            {question}
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
+                ) : (
+                  messages.map(m => (
+                    <div
+                      key={m.id}
+                      className={
+                        m.role === 'user'
+                          ? 'self-end max-w-[80%]'
+                          : 'self-start max-w-[80%]'
+                      }
+                    >
+                      <div className="flex items-start gap-2">
+                        {m.role === 'assistant' && (
+                          <Avatar className="size-6">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              <Brain className="size-3" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div
+                          className={
+                            m.role === 'user'
+                              ? 'rounded-xl bg-primary text-primary-foreground px-3 py-2 shadow-sm'
+                              : 'rounded-xl bg-muted text-foreground px-3 py-2 shadow-sm'
+                          }
+                        >
+                          {m.isLoading ? (
+                            <div className="flex items-center gap-1">
+                              <div className="flex space-x-1">
+                                <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce"></div>
+                              </div>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                Aibo sedang mengetik...
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap text-xs leading-relaxed">
+                              {m.content}
+                            </p>
+                          )}
+                        </div>
+                        {m.role === 'user' && (
+                          <Avatar className="size-6">
+                            <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+                              U
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
                 <div ref={endRef} />
               </div>
             </ScrollArea>
@@ -565,6 +770,8 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground mt-1 text-center">
                 {isLoading
                   ? 'Aibo sedang mengetik...'
+                  : chatHistory.length === 0
+                  ? 'Mulai percakapan pertama Anda dengan Aibo'
                   : 'Tekan Enter untuk kirim, Shift + Enter untuk baris baru'}
               </p>
             </div>
