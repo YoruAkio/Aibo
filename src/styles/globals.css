@@ -155,7 +155,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Bricolage Grotesque", Arial, Helvetica, sans-serif;
 }
 
 /* @note cross-browser compatibility fixes for webkit and better animation support */
@@ -196,4 +196,104 @@ body {
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+}
+
+/* @note custom scrollbar styles using theme colors - cross-browser support */
+.scrollbar-thin {
+  /* @note firefox support */
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--muted) / 0.3);
+}
+
+/* @note webkit browsers (chrome, safari, edge) */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 6px;
+  margin: 4px;
+  border: 1px solid hsl(var(--border) / 0.3);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.8), hsl(var(--primary) / 0.6));
+  border-radius: 6px;
+  border: 2px solid hsl(var(--background));
+  box-shadow: 0 2px 4px hsl(var(--foreground) / 0.1);
+  transition: all 0.3s ease-in-out;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.9), hsl(var(--primary) / 0.7));
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px hsl(var(--foreground) / 0.2);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
+  transform: scale(1.05);
+}
+
+.scrollbar-thin::-webkit-scrollbar-corner {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 6px;
+}
+
+/* @note custom scrollbar track and thumb colors for additional customization */
+.scrollbar-track-muted\/30::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+}
+
+.scrollbar-thumb-muted-foreground\/40::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+.hover\:scrollbar-thumb-muted-foreground\/60:hover::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.6);
+}
+
+/* @note additional webkit scrollbar styling for better cross-browser consistency */
+.scrollbar-thin::-webkit-scrollbar-button {
+  display: none;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track-piece {
+  background: transparent;
+}
+
+/* @note ensure scrollbar is always visible when needed */
+.scrollbar-thin {
+  scrollbar-gutter: stable;
+}
+
+/* @note custom primary scrollbar variant */
+.scrollbar-primary {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.7) hsl(var(--muted) / 0.2);
+}
+
+.scrollbar-primary::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scrollbar-primary::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.2);
+  border-radius: 5px;
+  margin: 2px;
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.7);
+  border-radius: 5px;
+  border: 1px solid hsl(var(--primary) / 0.3);
+  transition: all 0.2s ease;
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.8);
+  border-color: hsl(var(--primary) / 0.5);
 }
