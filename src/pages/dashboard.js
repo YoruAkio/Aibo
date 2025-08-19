@@ -250,27 +250,33 @@ export default function Dashboard() {
   const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
+    const userMessage = { id: Date.now(), role: 'user', content: input.trim() };
+    let newMessages;
+
     // @note create new chat if no active chat exists
     if (!activeChat) {
       const newChatId = Math.floor(Math.random() * 1000000) + Date.now();
       const currentTime = new Date();
 
+      // @note start with the user message
+      newMessages = [userMessage];
+
       const newChat = {
         id: newChatId,
-        title: 'Percakapan Baru',
+        title: generateChatTitle(newMessages),
         createdAt: currentTime.toISOString(),
         active: true,
-        messages: [],
+        messages: newMessages,
       };
 
       setChatHistory(prev => [
         newChat,
         ...prev.map(chat => ({ ...chat, active: false })),
       ]);
+    } else {
+      newMessages = [...messages, userMessage];
     }
 
-    const userMessage = { id: Date.now(), role: 'user', content: input.trim() };
-    const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);
