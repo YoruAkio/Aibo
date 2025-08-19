@@ -29,65 +29,40 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
-  // @note initialize chat history from localStorage
-  const [chatHistory, setChatHistory] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('aibo-chat-history');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          return parsed.length > 0
-            ? parsed
-            : [
-                {
-                  id: 1,
-                  title: 'Percakapan Hari Ini',
-                  timestamp: '2 menit lalu',
-                  active: true,
-                  messages: [
-                    {
-                      id: 1,
-                      role: 'assistant',
-                      content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-                    },
-                  ],
-                },
-              ];
-        } catch {
-          return [
-            {
-              id: 1,
-              title: 'Percakapan Hari Ini',
-              timestamp: '2 menit lalu',
-              active: true,
-              messages: [
-                {
-                  id: 1,
-                  role: 'assistant',
-                  content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-                },
-              ],
-            },
-          ];
+  const [isMounted, setIsMounted] = useState(false);
+
+  // @note initialize chat history from localStorage only after mount
+  const [chatHistory, setChatHistory] = useState([
+    {
+      id: 1,
+      title: 'Percakapan Hari Ini',
+      timestamp: '2 menit lalu',
+      active: true,
+      messages: [
+        {
+          id: 1,
+          role: 'assistant',
+          content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
+        },
+      ],
+    },
+  ]);
+
+  // @note load from localStorage after component mounts
+  useEffect(() => {
+    setIsMounted(true);
+    const saved = localStorage.getItem('aibo-chat-history');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) {
+          setChatHistory(parsed);
         }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
       }
     }
-    return [
-      {
-        id: 1,
-        title: 'Percakapan Hari Ini',
-        timestamp: '2 menit lalu',
-        active: true,
-        messages: [
-          {
-            id: 1,
-            role: 'assistant',
-            content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-          },
-        ],
-      },
-    ];
-  });
+  }, []);
 
   // @note get current active chat and its messages
   const activeChat = useMemo(
@@ -102,10 +77,10 @@ export default function Dashboard() {
 
   // @note save chat history to localStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (isMounted) {
       localStorage.setItem('aibo-chat-history', JSON.stringify(chatHistory));
     }
-  }, [chatHistory]);
+  }, [chatHistory, isMounted]);
 
   // @note update messages when active chat changes
   useEffect(() => {
@@ -244,13 +219,17 @@ export default function Dashboard() {
   }, []);
 
   const handleNewChat = useCallback(() => {
+    const newChatId = Math.floor(Math.random() * 1000000) + Date.now();
+    const currentTime = new Date();
+    const timeString = currentTime.toLocaleString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
     const newChat = {
-      id: Date.now(),
+      id: newChatId,
       title: 'Percakapan Baru',
-      timestamp: new Date().toLocaleString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      timestamp: timeString,
       active: true,
       messages: [
         {
@@ -286,6 +265,20 @@ export default function Dashboard() {
     },
     [chatHistory.length],
   );
+
+  // @note prevent hydration mismatch by not rendering until mounted
+  if (!isMounted) {
+    return (
+      <div className="flex h-screen w-full bg-background items-center justify-center">
+        <div className="flex items-center gap-2">
+          <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
+            <Brain className="size-4 text-primary-foreground" />
+          </div>
+          <span className="text-sm text-muted-foreground">Loading Aibo...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -327,7 +320,7 @@ export default function Dashboard() {
                       <SidebarMenuButton
                         isActive={chat.active}
                         onClick={() => handleChatSelect(chat.id)}
-                        className="flex-1 hover:bg-sidebar-accent/50 transition-colors duration-200"
+                        className="flex-1 hover:bg-sidebar-accent/50 transition-colors duration-200 pr-10"
                       >
                         <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
                           <MessageSquare className="size-4 text-primary" />
@@ -343,7 +336,7 @@ export default function Dashboard() {
                       </SidebarMenuButton>
                       {chatHistory.length > 1 && (
                         <div
-                          className="size-8 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 absolute right-2"
+                          className="size-8 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 absolute right-1 top-1/2 -translate-y-1/2"
                           onClick={e => handleDeleteChat(chat.id, e)}
                           title="Hapus percakapan"
                         >
