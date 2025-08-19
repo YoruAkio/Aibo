@@ -26,10 +26,18 @@ import {
   Send,
   History,
   Trash2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export default function Dashboard() {
   const [isMounted, setIsMounted] = useState(false);
+
+  // @note system prompt state with default value
+  const [systemPrompt, setSystemPrompt] = useState(
+    'You are Aibo, a helpful and friendly AI assistant. Respond in Indonesian language naturally and conversationally.',
+  );
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
 
   // @note initialize chat history from localStorage only after mount
   const [chatHistory, setChatHistory] = useState([
@@ -92,21 +100,6 @@ export default function Dashboard() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // @note update chat history with current messages
-  const updateChatMessages = useCallback(newMessages => {
-    setChatHistory(prev =>
-      prev.map(chat =>
-        chat.active
-          ? {
-              ...chat,
-              messages: newMessages,
-              title: generateChatTitle(newMessages),
-            }
-          : chat,
-      ),
-    );
-  }, []);
-
   // @note generate chat title from first user message
   const generateChatTitle = useCallback(messages => {
     const firstUserMessage = messages.find(msg => msg.role === 'user');
@@ -118,6 +111,89 @@ export default function Dashboard() {
     }
     return 'Percakapan Baru';
   }, []);
+
+  // @note update chat history with current messages
+  const updateChatMessages = useCallback(
+    newMessages => {
+      setChatHistory(prev => {
+        const updated = prev.map(chat =>
+          chat.active
+            ? {
+                ...chat,
+                messages: newMessages,
+                title: generateChatTitle(newMessages),
+              }
+            : chat,
+        );
+        // @note immediately save to localStorage to ensure persistence
+        if (isMounted) {
+          localStorage.setItem('aibo-chat-history', JSON.stringify(updated));
+        }
+        return updated;
+      });
+    },
+    [isMounted, generateChatTitle],
+  );
+
+  // @note send message to ai with system prompt
+  const sendMessage = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = { id: Date.now(), text: input, sender: 'user' };
+    const currentMessages = [...getCurrentMessages(), userMessage];
+    updateChatMessages(activeChatId, currentMessages);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: input,
+          system_prompt: systemPrompt, // @note include system prompt
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // @note add ai response to messages
+      const assistantMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content:
+          data.reply?.response ||
+          data.message ||
+          'Maaf, terjadi kesalahan. Silakan coba lagi.',
+      };
+
+      // @note remove loading message and add real response
+      const finalMessages = [...newMessages, assistantMessage];
+      setMessages(finalMessages);
+      updateChatMessages(finalMessages);
+    } catch (error) {
+      console.error('Error calling AI API:', error);
+
+      // @note add error message
+      const errorMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content:
+          'Maaf, terjadi kesalahan saat menghubungi AI. Silakan coba lagi.',
+      };
+
+      // @note remove loading message and add error response
+      const finalMessages = [...newMessages, errorMessage];
+      setMessages(finalMessages);
+      updateChatMessages(finalMessages);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
@@ -143,8 +219,7 @@ export default function Dashboard() {
       const apiMessages = [
         {
           role: 'system',
-          content:
-            'You are Aibo, a helpful and friendly AI assistant. Respond in Indonesian language naturally and conversationally.',
+          content: systemPrompt,
         },
         ...newMessages.map(msg => ({
           role: msg.role,
@@ -266,6 +341,15 @@ export default function Dashboard() {
     [chatHistory.length],
   );
 
+  // @note handle system prompt updates
+  const handleSystemPromptChange = value => {
+    setSystemPrompt(value);
+  };
+
+  const togglePromptEditor = () => {
+    setIsEditingPrompt(!isEditingPrompt);
+  };
+
   // @note prevent hydration mismatch by not rendering until mounted
   if (!isMounted) {
     return (
@@ -316,16 +400,16 @@ export default function Dashboard() {
               <SidebarMenu>
                 {chatHistory.map(chat => (
                   <SidebarMenuItem key={chat.id}>
-                    <div className="flex items-center group w-full relative">
+                    <div className="flex items-center group w-full relative mx-2 mb-1">
                       <SidebarMenuButton
                         isActive={chat.active}
                         onClick={() => handleChatSelect(chat.id)}
-                        className="flex-1 hover:bg-sidebar-accent/50 transition-colors duration-200 pr-10"
+                        className="flex-1 hover:bg-sidebar-accent/80 transition-colors duration-200 pr-10 py-3 px-3 rounded-lg data-[active=true]:bg-sidebar-accent data-[active=true]:shadow-sm"
                       >
-                        <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <MessageSquare className="size-4 text-primary" />
                         </div>
-                        <div className="flex-1 text-left min-w-0">
+                        <div className="flex-1 text-left min-w-0 ml-3">
                           <div className="text-sm font-medium truncate leading-tight">
                             {chat.title}
                           </div>
@@ -336,7 +420,7 @@ export default function Dashboard() {
                       </SidebarMenuButton>
                       {chatHistory.length > 1 && (
                         <div
-                          className="size-8 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 absolute right-1 top-1/2 -translate-y-1/2"
+                          className="size-8 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 absolute right-3 top-1/2 -translate-y-1/2"
                           onClick={e => handleDeleteChat(chat.id, e)}
                           title="Hapus percakapan"
                         >
@@ -361,103 +445,153 @@ export default function Dashboard() {
               <span className="text-sm text-muted-foreground">•</span>
               <span className="text-sm text-muted-foreground">Aktif</span>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEditingPrompt(!isEditingPrompt)}
+            >
+              <Settings className="size-4" />
+            </Button>
             <Button variant="ghost" size="sm">
               <Search className="size-4" />
             </Button>
           </header>
 
-          {/* @note scrollable chat messages */}
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full">
-              <div className="flex flex-col gap-4 max-w-4xl mx-auto px-4 py-4">
-                {messages.map(m => (
-                  <div
-                    key={m.id}
-                    className={
-                      m.role === 'user'
-                        ? 'self-end max-w-[85%]'
-                        : 'self-start max-w-[85%]'
-                    }
-                  >
-                    <div className="flex items-start gap-3">
-                      {m.role === 'assistant' && (
-                        <Avatar className="size-8">
-                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                            <Brain className="size-4" />
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div
-                        className={
-                          m.role === 'user'
-                            ? 'rounded-2xl bg-primary text-primary-foreground px-4 py-3 shadow-sm'
-                            : 'rounded-2xl bg-muted text-foreground px-4 py-3 shadow-sm'
-                        }
-                      >
-                        {m.isLoading ? (
-                          <div className="flex items-center gap-1">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                              <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                              <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                            </div>
-                            <span className="text-sm text-muted-foreground ml-2">
-                              Aibo sedang mengetik...
-                            </span>
-                          </div>
-                        ) : (
-                          <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                            {m.content}
-                          </p>
-                        )}
-                      </div>
-                      {m.role === 'user' && (
-                        <Avatar className="size-8">
-                          <AvatarFallback className="bg-secondary text-secondary-foreground text-sm">
-                            U
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <div ref={endRef} />
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* @note fixed input area */}
-          <div className="shrink-0 border-t border-border p-4 bg-background">
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-end gap-3">
-                <div className="flex-1 relative">
-                  <Textarea
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    rows={1}
-                    placeholder="Ketik pesan Anda..."
-                    className="resize-none min-h-12 max-h-32 pr-12"
-                  />{' '}
+          <div className="flex-1 flex flex-col">
+            <div className="p-6 border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-white">Aibo</h1>
+                <div className="flex items-center gap-2">
                   <Button
-                    onClick={handleSend}
+                    variant="outline"
                     size="sm"
-                    className="absolute right-2 bottom-2 size-8"
-                    disabled={!input.trim() || isLoading}
+                    onClick={togglePromptEditor}
+                    className="text-gray-300 border-gray-700 hover:bg-gray-800 hover:text-white"
                   >
-                    {isLoading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
-                    ) : (
-                      <Send className="size-4" />
-                    )}
+                    {isEditingPrompt ? 'Save' : 'Edit Prompt'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleNewChat()}
+                    className="text-gray-300 border-gray-700 hover:bg-gray-800 hover:text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Chat
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                {isLoading
-                  ? 'Aibo sedang mengetik...'
-                  : 'Tekan Enter untuk kirim, Shift + Enter untuk baris baru'}
-              </p>
+            </div>
+
+            {/* @note system prompt editor */}
+            {isEditingPrompt && (
+              <div className="p-4 border-b border-gray-800 bg-gray-900/30">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  System Prompt
+                </label>
+                <Textarea
+                  value={systemPrompt}
+                  onChange={e => handleSystemPromptChange(e.target.value)}
+                  className="w-full bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter system prompt..."
+                  rows={3}
+                />
+              </div>
+            )}
+
+            {/* @note scrollable chat messages */}
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="flex flex-col gap-4 max-w-4xl mx-auto px-4 py-4">
+                  {messages.map(m => (
+                    <div
+                      key={m.id}
+                      className={
+                        m.role === 'user'
+                          ? 'self-end max-w-[85%]'
+                          : 'self-start max-w-[85%]'
+                      }
+                    >
+                      <div className="flex items-start gap-3">
+                        {m.role === 'assistant' && (
+                          <Avatar className="size-8">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                              <Brain className="size-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div
+                          className={
+                            m.role === 'user'
+                              ? 'rounded-2xl bg-primary text-primary-foreground px-4 py-3 shadow-sm'
+                              : 'rounded-2xl bg-muted text-foreground px-4 py-3 shadow-sm'
+                          }
+                        >
+                          {m.isLoading ? (
+                            <div className="flex items-center gap-1">
+                              <div className="flex space-x-1">
+                                <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
+                              </div>
+                              <span className="text-sm text-muted-foreground ml-2">
+                                Aibo sedang mengetik...
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                              {m.content}
+                            </p>
+                          )}
+                        </div>
+                        {m.role === 'user' && (
+                          <Avatar className="size-8">
+                            <AvatarFallback className="bg-secondary text-secondary-foreground text-sm">
+                              U
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={endRef} />
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* @note fixed input area */}
+            <div className="shrink-0 border-t border-border p-4 bg-background">
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-end gap-3">
+                  <div className="flex-1 relative">
+                    <Textarea
+                      value={input}
+                      onChange={e => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      rows={1}
+                      placeholder="Ketik pesan Anda..."
+                      className="resize-none min-h-12 max-h-32 pr-12"
+                    />{' '}
+                    <Button
+                      onClick={handleSend}
+                      size="sm"
+                      className="absolute right-2 bottom-2 size-8"
+                      disabled={!input.trim() || isLoading}
+                    >
+                      {isLoading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
+                      ) : (
+                        <Send className="size-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  {isLoading
+                    ? 'Aibo sedang mengetik...'
+                    : 'Tekan Enter untuk kirim, Shift + Enter untuk baris baru'}
+                </p>
+              </div>
             </div>
           </div>
         </SidebarInset>
