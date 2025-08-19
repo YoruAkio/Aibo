@@ -3,6 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
   Sidebar,
   SidebarContent,
@@ -370,23 +371,23 @@ export default function Dashboard() {
         {/* @note sidebar for chat history */}
         <Sidebar className="border-r border-border">
           <SidebarHeader className="border-b border-border">
-            <div className="flex items-center gap-2 px-4 py-3">
+            <div className="flex items-center gap-2 px-3 py-2">
               <div className="flex items-center gap-2">
-                <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Brain className="size-4 text-primary-foreground" />
+                <div className="size-6 rounded-lg bg-primary flex items-center justify-center">
+                  <Brain className="size-3 text-primary-foreground" />
                 </div>
                 <div>
-                  <h1 className="font-semibold text-sm">Aibo Dashboard</h1>
+                  <h1 className="font-semibold text-xs">Aibo Dashboard</h1>
                   <p className="text-xs text-muted-foreground">AI Assistant</p>
                 </div>
               </div>
             </div>
             <Button
               onClick={handleNewChat}
-              className="mx-4 mb-2 justify-start gap-2"
+              className="mx-3 mb-2 justify-start gap-2 h-8 text-xs"
               variant="outline"
             >
-              <Plus className="size-4" />
+              <Plus className="size-3" />
               Percakapan Baru
             </Button>
           </SidebarHeader>
@@ -400,17 +401,17 @@ export default function Dashboard() {
               <SidebarMenu>
                 {chatHistory.map(chat => (
                   <SidebarMenuItem key={chat.id}>
-                    <div className="flex items-center group w-full gap-2 px-2 py-1">
+                    <div className="flex items-center group w-full gap-1 px-1 py-1">
                       <SidebarMenuButton
                         isActive={chat.active}
                         onClick={() => handleChatSelect(chat.id)}
-                        className="flex-1 hover:bg-sidebar-accent/80 transition-colors duration-200 py-2 px-3 rounded-lg data-[active=true]:bg-sidebar-accent data-[active=true]:shadow-sm min-w-0"
+                        className="flex-1 hover:bg-sidebar-accent/80 transition-colors duration-200 py-1 px-2 rounded-lg data-[active=true]:bg-sidebar-accent data-[active=true]:shadow-sm min-w-0"
                       >
-                        <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <MessageSquare className="size-4 text-primary" />
+                        <div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <MessageSquare className="size-3 text-primary" />
                         </div>
-                        <div className="flex-1 text-left min-w-0 ml-3 overflow-hidden">
-                          <div className="text-sm font-medium truncate leading-tight">
+                        <div className="flex-1 text-left min-w-0 ml-2 overflow-hidden">
+                          <div className="text-xs font-medium truncate leading-tight">
                             {chat.title}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
@@ -420,11 +421,11 @@ export default function Dashboard() {
                       </SidebarMenuButton>
                       {chatHistory.length > 1 && (
                         <div
-                          className="size-8 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 flex-shrink-0"
+                          className="size-6 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hover:bg-destructive/10 flex-shrink-0"
                           onClick={e => handleDeleteChat(chat.id, e)}
                           title="Hapus percakapan"
                         >
-                          <Trash2 className="size-4 text-destructive" />
+                          <Trash2 className="size-3 text-destructive" />
                         </div>
                       )}
                     </div>
@@ -436,132 +437,136 @@ export default function Dashboard() {
         </Sidebar>
 
         {/* @note main chat area */}
-        <SidebarInset className="flex flex-col h-screen">
+        <SidebarInset className="flex flex-col h-screen overflow-hidden">
           {/* @note fixed header */}
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 bg-background z-10">
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3 bg-background z-10">
             <SidebarTrigger className="ml-1" />
             <div className="flex items-center gap-2 flex-1">
-              <h2 className="font-semibold">Ruang Obrolan</h2>
-              <span className="text-sm text-muted-foreground">•</span>
-              <span className="text-sm text-muted-foreground">Aktif</span>
+              <h2 className="font-semibold text-sm">Ruang Obrolan</h2>
+              <span className="text-xs text-muted-foreground">•</span>
+              <span className="text-xs text-muted-foreground">Aktif</span>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsEditingPrompt(!isEditingPrompt)}
-            >
-              <Settings className="size-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingPrompt(!isEditingPrompt)}
+                className="h-8 w-8 p-0"
+              >
+                <Settings className="size-3" />
+              </Button>
+            </div>
           </header>
 
-          <div className="flex-1 flex flex-col">
-            {/* @note system prompt editor */}
-            {isEditingPrompt && (
-              <div className="p-4 border-b border-border bg-muted/30">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  System Prompt
-                </label>
-                <Textarea
-                  value={systemPrompt}
-                  onChange={e => handleSystemPromptChange(e.target.value)}
-                  className="w-full"
-                  placeholder="Enter system prompt..."
-                  rows={3}
-                />
-              </div>
-            )}
-            {/* @note scrollable chat messages */}
-            <div className="flex-1 overflow-hidden">
-              <ScrollArea className="h-full">
-                <div className="flex flex-col gap-4 max-w-4xl mx-auto px-4 py-4">
-                  {messages.map(m => (
-                    <div
-                      key={m.id}
-                      className={
-                        m.role === 'user'
-                          ? 'self-end max-w-[85%]'
-                          : 'self-start max-w-[85%]'
-                      }
-                    >
-                      <div className="flex items-start gap-3">
-                        {m.role === 'assistant' && (
-                          <Avatar className="size-8">
-                            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                              <Brain className="size-4" />
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div
-                          className={
-                            m.role === 'user'
-                              ? 'rounded-2xl bg-primary text-primary-foreground px-4 py-3 shadow-sm'
-                              : 'rounded-2xl bg-muted text-foreground px-4 py-3 shadow-sm'
-                          }
-                        >
-                          {m.isLoading ? (
-                            <div className="flex items-center gap-1">
-                              <div className="flex space-x-1">
-                                <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                              </div>
-                              <span className="text-sm text-muted-foreground ml-2">
-                                Aibo sedang mengetik...
-                              </span>
+          {/* @note system prompt editor - fixed */}
+          {isEditingPrompt && (
+            <div className="p-3 border-b border-border bg-muted/30 flex-shrink-0">
+              <label className="block text-xs font-medium text-foreground mb-1">
+                System Prompt
+              </label>
+              <Textarea
+                value={systemPrompt}
+                onChange={e => handleSystemPromptChange(e.target.value)}
+                className="w-full text-sm"
+                placeholder="Enter system prompt..."
+                rows={2}
+              />
+            </div>
+          )}
+
+          {/* @note scrollable chat messages only */}
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="flex flex-col gap-3 max-w-3xl mx-auto px-3 py-3">
+                {messages.map(m => (
+                  <div
+                    key={m.id}
+                    className={
+                      m.role === 'user'
+                        ? 'self-end max-w-[80%]'
+                        : 'self-start max-w-[80%]'
+                    }
+                  >
+                    <div className="flex items-start gap-2">
+                      {m.role === 'assistant' && (
+                        <Avatar className="size-6">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                            <Brain className="size-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={
+                          m.role === 'user'
+                            ? 'rounded-xl bg-primary text-primary-foreground px-3 py-2 shadow-sm'
+                            : 'rounded-xl bg-muted text-foreground px-3 py-2 shadow-sm'
+                        }
+                      >
+                        {m.isLoading ? (
+                          <div className="flex items-center gap-1">
+                            <div className="flex space-x-1">
+                              <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                              <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                              <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce"></div>
                             </div>
-                          ) : (
-                            <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                              {m.content}
-                            </p>
-                          )}
-                        </div>
-                        {m.role === 'user' && (
-                          <Avatar className="size-8">
-                            <AvatarFallback className="bg-secondary text-secondary-foreground text-sm">
-                              U
-                            </AvatarFallback>
-                          </Avatar>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              Aibo sedang mengetik...
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap text-xs leading-relaxed">
+                            {m.content}
+                          </p>
                         )}
                       </div>
-                    </div>
-                  ))}
-                  <div ref={endRef} />
-                </div>
-              </ScrollArea>
-            </div>
-            {/* @note fixed input area */}
-            <div className="shrink-0 border-t border-border p-4 bg-background">
-              <div className="max-w-4xl mx-auto">
-                <div className="flex items-end gap-3">
-                  <div className="flex-1 relative">
-                    <Textarea
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      rows={1}
-                      placeholder="Ketik pesan Anda..."
-                      className="resize-none min-h-12 max-h-32 pr-12"
-                    />{' '}
-                    <Button
-                      onClick={handleSend}
-                      size="sm"
-                      className="absolute right-2 bottom-2 size-8"
-                      disabled={!input.trim() || isLoading}
-                    >
-                      {isLoading ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
-                      ) : (
-                        <Send className="size-4" />
+                      {m.role === 'user' && (
+                        <Avatar className="size-6">
+                          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+                            U
+                          </AvatarFallback>
+                        </Avatar>
                       )}
-                    </Button>
+                    </div>
                   </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  {isLoading
-                    ? 'Aibo sedang mengetik...'
-                    : 'Tekan Enter untuk kirim, Shift + Enter untuk baris baru'}
-                </p>
+                ))}
+                <div ref={endRef} />
               </div>
+            </ScrollArea>
+          </div>
+
+          {/* @note fixed input area */}
+          <div className="shrink-0 border-t border-border p-3 bg-background">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-end gap-2">
+                <div className="flex-1 relative">
+                  <Textarea
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    placeholder="Ketik pesan Anda..."
+                    className="resize-none min-h-10 max-h-24 pr-10 text-sm"
+                  />{' '}
+                  <Button
+                    onClick={handleSend}
+                    size="sm"
+                    className="absolute right-1 bottom-1 size-6"
+                    disabled={!input.trim() || isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent" />
+                    ) : (
+                      <Send className="size-3" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 text-center">
+                {isLoading
+                  ? 'Aibo sedang mengetik...'
+                  : 'Tekan Enter untuk kirim, Shift + Enter untuk baris baru'}
+              </p>
             </div>
           </div>
         </SidebarInset>
