@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -29,34 +29,127 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: 'assistant',
-      content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-    },
-  ]);
+  // @note initialize chat history from localStorage
+  const [chatHistory, setChatHistory] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('aibo-chat-history');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          return parsed.length > 0
+            ? parsed
+            : [
+                {
+                  id: 1,
+                  title: 'Percakapan Hari Ini',
+                  timestamp: '2 menit lalu',
+                  active: true,
+                  messages: [
+                    {
+                      id: 1,
+                      role: 'assistant',
+                      content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
+                    },
+                  ],
+                },
+              ];
+        } catch {
+          return [
+            {
+              id: 1,
+              title: 'Percakapan Hari Ini',
+              timestamp: '2 menit lalu',
+              active: true,
+              messages: [
+                {
+                  id: 1,
+                  role: 'assistant',
+                  content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
+                },
+              ],
+            },
+          ];
+        }
+      }
+    }
+    return [
+      {
+        id: 1,
+        title: 'Percakapan Hari Ini',
+        timestamp: '2 menit lalu',
+        active: true,
+        messages: [
+          {
+            id: 1,
+            role: 'assistant',
+            content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
+          },
+        ],
+      },
+    ];
+  });
+
+  // @note get current active chat and its messages
+  const activeChat = useMemo(
+    () => chatHistory.find(chat => chat.active) || chatHistory[0],
+    [chatHistory],
+  );
+
+  const [messages, setMessages] = useState(activeChat?.messages || []);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState([
-    {
-      id: 1,
-      title: 'Percakapan Hari Ini',
-      timestamp: '2 menit lalu',
-      active: true,
-    },
-  ]);
   const endRef = useRef(null);
 
+  // @note save chat history to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aibo-chat-history', JSON.stringify(chatHistory));
+    }
+  }, [chatHistory]);
+
+  // @note update messages when active chat changes
+  useEffect(() => {
+    setMessages(activeChat?.messages || []);
+  }, [activeChat]);
+
+  // @note auto scroll to bottom when messages change
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  async function handleSend() {
+  // @note update chat history with current messages
+  const updateChatMessages = useCallback(newMessages => {
+    setChatHistory(prev =>
+      prev.map(chat =>
+        chat.active
+          ? {
+              ...chat,
+              messages: newMessages,
+              title: generateChatTitle(newMessages),
+            }
+          : chat,
+      ),
+    );
+  }, []);
+
+  // @note generate chat title from first user message
+  const generateChatTitle = useCallback(messages => {
+    const firstUserMessage = messages.find(msg => msg.role === 'user');
+    if (firstUserMessage) {
+      const title = firstUserMessage.content.slice(0, 30);
+      return title.length < firstUserMessage.content.length
+        ? `${title}...`
+        : title;
+    }
+    return 'Percakapan Baru';
+  }, []);
+
+  const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage = { id: Date.now(), role: 'user', content: input.trim() };
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
@@ -67,18 +160,18 @@ export default function Dashboard() {
       content: '...',
       isLoading: true,
     };
-    setMessages(prev => [...prev, loadingMessage]);
+    const messagesWithLoading = [...newMessages, loadingMessage];
+    setMessages(messagesWithLoading);
 
     try {
       // @note prepare messages for api call
-      const currentMessages = [...messages, userMessage];
       const apiMessages = [
         {
           role: 'system',
           content:
             'You are Aibo, a helpful and friendly AI assistant. Respond in Indonesian language naturally and conversationally.',
         },
-        ...currentMessages.map(msg => ({
+        ...newMessages.map(msg => ({
           role: msg.role,
           content: msg.content,
         })),
@@ -111,9 +204,9 @@ export default function Dashboard() {
       };
 
       // @note remove loading message and add real response
-      setMessages(prev =>
-        prev.filter(msg => msg.id !== 'loading').concat(assistantMessage),
-      );
+      const finalMessages = [...newMessages, assistantMessage];
+      setMessages(finalMessages);
+      updateChatMessages(finalMessages);
     } catch (error) {
       console.error('Error calling AI API:', error);
 
@@ -126,80 +219,73 @@ export default function Dashboard() {
       };
 
       // @note remove loading message and add error response
-      setMessages(prev =>
-        prev.filter(msg => msg.id !== 'loading').concat(errorMessage),
-      );
+      const finalMessages = [...newMessages, errorMessage];
+      setMessages(finalMessages);
+      updateChatMessages(finalMessages);
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [input, isLoading, messages, updateChatMessages]);
 
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }
+  const handleKeyDown = useCallback(
+    e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend],
+  );
 
-  function handleChatSelect(chatId) {
+  const handleChatSelect = useCallback(chatId => {
     setChatHistory(prev =>
       prev.map(chat => ({ ...chat, active: chat.id === chatId })),
     );
-    // @note reset to initial message when switching chats
-    setMessages([
-      {
-        id: 1,
-        role: 'assistant',
-        content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-      },
-    ]);
-  }
+  }, []);
 
-  function handleNewChat() {
+  const handleNewChat = useCallback(() => {
     const newChat = {
       id: Date.now(),
       title: 'Percakapan Baru',
-      timestamp: 'Sekarang',
+      timestamp: new Date().toLocaleString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
       active: true,
+      messages: [
+        {
+          id: 1,
+          role: 'assistant',
+          content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
+        },
+      ],
     };
     setChatHistory(prev => [
       newChat,
       ...prev.map(chat => ({ ...chat, active: false })),
     ]);
-    setMessages([
-      {
-        id: 1,
-        role: 'assistant',
-        content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-      },
-    ]);
-  }
+  }, []);
 
-  function handleDeleteChat(chatId, e) {
-    e.stopPropagation();
-    // @note prevent deleting if only one chat remains
-    if (chatHistory.length <= 1) return;
+  const handleDeleteChat = useCallback(
+    (chatId, e) => {
+      e.stopPropagation();
+      // @note prevent deleting if only one chat remains
+      if (chatHistory.length <= 1) return;
 
-    setChatHistory(prev => {
-      const filtered = prev.filter(chat => chat.id !== chatId);
-      // @note if we deleted the active chat, make the first remaining chat active
-      const deletedChatWasActive = prev.find(
-        chat => chat.id === chatId,
-      )?.active;
-      if (deletedChatWasActive && filtered.length > 0) {
-        filtered[0].active = true;
-        // @note reset messages for the new active chat
-        setMessages([
-          {
-            id: 1,
-            role: 'assistant',
-            content: 'Halo! Ada yang bisa Aibo bantu hari ini?',
-          },
-        ]);
-      }
-      return filtered;
-    });
-  }
+      setChatHistory(prev => {
+        const filtered = prev.filter(chat => chat.id !== chatId);
+        // @note if we deleted the active chat, make the first remaining chat active
+        const deletedChatWasActive = prev.find(
+          chat => chat.id === chatId,
+        )?.active;
+        if (deletedChatWasActive && filtered.length > 0) {
+          filtered[0].active = true;
+        }
+        return filtered;
+      });
+    },
+    [chatHistory.length],
+  );
 
   return (
     <SidebarProvider>
